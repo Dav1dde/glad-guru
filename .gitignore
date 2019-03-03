@@ -1,0 +1,12 @@
+*.idea
+*.iml
+node_modules/
+
+ui/src/assets/*.json
+ui/src/assets/docs/
+
+dist/
+build/
+
+*.pyc
+*.pyo

@@ -1,0 +1,8 @@
+<app-auto-complete-search
+    [values]="symbols | async"
+    (itemSelected)="showSymbol($event)"
+></app-auto-complete-search>
+
+<div [innerHTML]="content | async">
+
+</div>
