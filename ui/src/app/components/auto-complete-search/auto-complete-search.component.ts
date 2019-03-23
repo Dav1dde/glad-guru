@@ -1,64 +1,76 @@
-import {Component, ElementRef, EventEmitter, Inject, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {DOCUMENT} from "@angular/common";
-import {Observable} from "rxjs";
+import {
+    AfterContentInit,
+    Component,
+    ContentChild,
+    ElementRef,
+    EventEmitter,
+    Inject,
+    Input, OnDestroy,
+    OnInit,
+    Output, TemplateRef,
+    ViewChild
+} from '@angular/core';
+import {DOCUMENT, NgForOfContext} from "@angular/common";
+import {concat, fromEvent, Observable, of, Subject, Subscription} from "rxjs";
+import {AutoCompleteInputDirective} from "./auto-complete-input.directive";
+import {map} from "rxjs/operators";
+import {DomSanitizer} from "@angular/platform-browser";
 
 @Component({
     selector: 'app-auto-complete-search',
-    templateUrl: './auto-complete-search.component.html',
-    styleUrls: ['./auto-complete-search.component.scss']
+    template: `
+        <div class="container"
+             (focusin)="onFocus($event)"
+             (focusout)="onFocus($event)"
+             #container
+        >
+            <ng-content></ng-content>
+
+            <ng-container
+                [ngTemplateOutlet]="template"
+                [ngTemplateOutletContext]="{'$implicit': results$ | async, 'active': isActive}">
+            </ng-container>
+        </div>
+    `,
+    styles: [
+        '.container { position: relative; }',
+    ]
 })
-export class AutoCompleteSearchComponent {
+export class AutoCompleteSearchComponent implements OnInit, OnDestroy {
     @Output()
     public itemSelected = new EventEmitter<string>();
-
     @Input()
-    public caseSensitive = false;
-
-    private _values: string[];
-    @Input()
-    set values(values: string[]) {
-        this._values = values;
-        this._autocomplete = this._values || [];
-    }
-    get values() {
-        return this._values;
-    }
-
+    public search: (text: Observable<string>) => Observable<any[]>;
+    @ContentChild(TemplateRef)
+    public template: TemplateRef<any>;
+    @ContentChild(AutoCompleteInputDirective)
+    public input: AutoCompleteInputDirective;
     @ViewChild('container')
     private containerEl: ElementRef;
-    private oldFilter: string;
 
+    public results$: Observable<any[]>;
+    private _resultSubscription: Subscription;
+
+    private hasValues = false;
     public focused = false;
-    public searchValue = "";
 
-    private _autocomplete: string[];
-
-    constructor(@Inject(DOCUMENT) private document: Document) {
+    constructor() {
     }
 
-    get autocomplete() {
-        return this._autocomplete;
+    ngOnInit(): void {
+        this.results$ = concat(of(''), this.input.content$).pipe(this.search);
+
+        this._resultSubscription = this.results$.subscribe(values => {
+            this.hasValues = !!values && !!values.length;
+        });
     }
 
-    get showDropdown() {
-        return this.focused && this._autocomplete.length != 0;
+    ngOnDestroy(): void {
+        this._resultSubscription.unsubscribe();
     }
 
-    onInput(input: string) {
-        let regex = new RegExp(input, 'i');
-        let data = this.values;
-        if (this.oldFilter && input.match(this.oldFilter)) {
-            data = this._autocomplete;
-        }
-        this._autocomplete = data.filter(data => data.match(regex));
-        this.oldFilter = input;
-    }
-
-    onSelect(value: string) {
-        this._autocomplete = [];
-        this.searchValue = value;
-
-        this.itemSelected.emit(this.searchValue);
+    get isActive() {
+        return this.hasValues && this.focused;
     }
 
     onFocus(event) {
@@ -66,12 +78,6 @@ export class AutoCompleteSearchComponent {
             this.focused = true;
         } else {
             this.focused = event.type == 'focusin';
-        }
-    }
-
-    onKeyPress(code: string) {
-        if (code == 'Enter') {
-            this.itemSelected.emit(this.searchValue);
         }
     }
 }

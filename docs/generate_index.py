@@ -8,6 +8,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('assets')
+    parser.add_argument('-o', type=argparse.FileType('w'), required=True)
     ns = parser.parse_args()
 
     data = defaultdict(list)
@@ -17,7 +18,7 @@ def main():
             name = os.path.splitext(file)[0].lower()
             data[name].append(os.path.relpath(os.path.join(root, file), ns.assets))
 
-    print(json.dumps(data))
+    print(json.dumps(data), file=ns.o)
 
 
 if __name__ == '__main__':

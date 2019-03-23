@@ -1,8 +1,11 @@
-<app-auto-complete-search
-    [values]="symbols | async"
-    (itemSelected)="showSymbol($event)"
-></app-auto-complete-search>
+<app-auto-complete-search [search]="search">
+    <input appAutoCompleteInput type="text">
 
-<div [innerHTML]="content | async">
-
-</div>
+    <ng-template let-values let-active="active">
+        <ul *ngIf="active">
+            <li *ngFor="let value of values" [routerLink]="[value]" tabindex="-1">
+                {{ value }}
+            </li>
+        </ul>
+    </ng-template>
+</app-auto-complete-search>

@@ -9,7 +9,7 @@ import {flatMap} from "rxjs/internal/operators";
 })
 export class DataService {
     private symbols: Observable<string[]>;
-    private index: Observable<{[name: string]: string}>;
+    private index: Observable<{[name: string]: string[]}>;
 
     constructor(private httpClient: HttpClient) {
     }
@@ -23,16 +23,16 @@ export class DataService {
         return this.symbols;
     }
 
-    public getIndex(): Observable<{[name: string]: string}> {
+    public getIndex(): Observable<{[name: string]: string[]}> {
         if (!this.index) {
-            this.index = this.httpClient.get<{ [name: string]: string }>(`/assets/docs/index.json`)
+            this.index = this.httpClient.get<{ [name: string]: string[] }>(`/assets/docs/index.json`)
                 .pipe(shareReplay(1));
         }
 
         return this.index;
     }
 
-    public getDocumentation(name: string): Observable<string> {
+    public getDocumentation(name: string, api: string = null): Observable<string> {
         return this.getIndex()
             .pipe(
                 map(index => {
@@ -40,7 +40,16 @@ export class DataService {
                         if (!path) {
                             throw `symbol ${name} has no docs`
                         }
-                        return path[0];
+
+                        if (api != null) {
+                            let selected = path.find(f => f.startsWith(api + '/'));
+                            if (!selected) {
+                                throw `symbol ${name} has no docs for api ${api}`
+                            }
+                            return selected;
+                        } else {
+                            return path[0];
+                        }
                     }
                 ),
                 flatMap(path => this.httpClient.get(`/assets/docs/${path}`, {responseType: 'text'}))
