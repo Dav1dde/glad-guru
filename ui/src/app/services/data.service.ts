@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {Observable} from "rxjs";
-import {map, shareReplay} from "rxjs/operators";
+import {map, share, shareReplay} from "rxjs/operators";
 import {flatMap} from "rxjs/internal/operators";
 
 @Injectable({
@@ -54,5 +54,9 @@ export class DataService {
                 ),
                 flatMap(path => this.httpClient.get(`/assets/docs/${path}`, {responseType: 'text'}))
             )
+    }
+
+    public getSymbol(name: string): Observable<any> {
+        return this.httpClient.get<any>(`/assets/symbols/${name}.json`).pipe(share())
     }
 }

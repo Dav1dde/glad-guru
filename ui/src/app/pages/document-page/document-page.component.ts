@@ -1,30 +1,50 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {Observable, of} from "rxjs";
-import {catchError, map, switchMap} from "rxjs/operators";
+import {catchError, flatMap, map, share, switchMap, tap} from "rxjs/operators";
 import {DataService} from "../../services/data.service";
-import {DomSanitizer} from "@angular/platform-browser";
+import {DomSanitizer, SafeHtml, Title} from "@angular/platform-browser";
 
 @Component({
     selector: 'app-document-page',
-    template: `<div [innerHTML]="document$ | async"></div>`
+    template: `
+        <a [routerLink]="['/']">Back</a>
+        <div *ngIf="symbol$ | async as symbol">
+            <ul>
+                <li>Name: {{ symbol.name }}</li>
+                <li *ngIf="symbol.api">API: {{ symbol.api }}</li>
+                <li>Type: {{ symbol.type }}</li>
+                <li *ngIf="symbol.alias">Alias: <a [routerLink]="['/' + symbol.alias]">{{ symbol.alias }}</a></li>
+            </ul>
+        </div>
+        <div [innerHTML]="document$ | async"></div>
+    `
 })
 export class DocumentPageComponent implements OnInit {
-
-    document$: Observable<string>;
+    symbol$: Observable<any>;
+    document$: Observable<SafeHtml>;
 
     constructor(private dataService: DataService,
+                private titleService: Title,
                 private route: ActivatedRoute, private sanitizer: DomSanitizer) {
     }
 
     ngOnInit() {
         this.document$ = this.route.paramMap.pipe(
-            switchMap(params => {
-                return this.dataService.getDocumentation(params.get('symbol'), params.get('api'));
+            flatMap(params => {
+                return this.dataService.getDocumentation(params.get('symbol'), params.get('api'))
+                    .pipe(catchError(err => of(err.toString())));
             }),
             map(content => this.sanitizer.bypassSecurityTrustHtml(content)),
-            catchError(err => of(err.toString()))
         );
-    }
 
+        this.symbol$ = this.route.paramMap.pipe(
+            switchMap(params => {
+                return this.dataService.getSymbol(params.get('symbol'))
+            }),
+            share()
+        );
+
+        this.route.paramMap.subscribe(params => this.titleService.setTitle(params.get('symbol') + ' - glad guru'));
+    }
 }

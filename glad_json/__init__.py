@@ -28,20 +28,24 @@ class JsonGenerator(BaseGenerator):
         return "json"
 
     def generate(self, spec, feature_set, config, sink=LoggingSink(__name__)):
-        output_path = os.path.join(self.path, feature_set.name + '.json')
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
         serializer = {
             'default': DefaultSerializer,
-            'symbols': SymbolSerializer
-        }[config['SERIALIZER']]()
+            'symbols': SymbolSerializer,
+            'symbol_info': SymbolInfoSerializer
+        }[config['SERIALIZER']](self.path)
 
-        with open(output_path, 'wb') as output:
-            json.dump(serializer.serialize(feature_set), output, indent=4 if config['PRETTY'] else None)
+        for output_path, data in serializer.serialize(feature_set):
+            with open(output_path, 'wb') as output:
+                json.dump(data, output, indent=4 if config['PRETTY'] else None)
 
 
 class Serializer(object):
+    def __init__(self, path):
+        self.path = path
+
     def serialize(self, feature_set):
         raise NotImplementedError
 
@@ -62,26 +66,30 @@ class DefaultSerializer(Serializer):
         for name, data in (self.serialize_feature(feature) for feature in feature_set.features):
             result[name] = data
 
-        return result
+        for name, data in (self.serialize_type(type_) for type_ in feature_set.types):
+            result[name] = data
+
+        output_path = os.path.join(self.path, feature_set.name + '.json')
+        yield output_path, result
 
     def serialize_command(self, command):
         return command.name, dict(
             type='command',
-            # name=command.name,
+            name=command.name,
             alias=command.alias,
             api=command.api,
             parameters=[self.serialize_parameter(param) for param in command.params],
-            ret=self.serialize_type(command.proto.ret)
+            ret=self.serialize_parsed_type(command.proto.ret)
         )
 
     def serialize_parameter(self, param):
         return dict(
             name=param.name,
             group=param.group,
-            type=self.serialize_type(param.type),
+            type=self.serialize_parsed_type(param.type),
         )
 
-    def serialize_type(self, type_):
+    def serialize_parsed_type(self, type_):
         return type_.type
 
     def serialize_enum(self, enum):
@@ -107,6 +115,26 @@ class DefaultSerializer(Serializer):
             supported=feature.supported
         )
 
+    def serialize_type(self, type_):
+        return type_.name, dict(
+            type='type',
+            name=type_.name,
+            alias=type_.alias,
+            api=type_.api,
+            raw=type_._raw,
+            category=type_.category,
+            requires=list(type_.requires)
+        )
+
+
+class SymbolInfoSerializer(DefaultSerializer):
+    def serialize(self, feature_set):
+        _, data = next(DefaultSerializer.serialize(self, feature_set))
+
+        for symbol, info in data.items():
+            output_path = os.path.join(self.path, symbol + '.json')
+            yield output_path, info
+
 
 class SymbolSerializer(Serializer):
     def serialize(self, feature_set):
@@ -117,4 +145,5 @@ class SymbolSerializer(Serializer):
         result.extend(extension.name for extension in feature_set.extensions)
         result.extend(feature.name for feature in feature_set.features)
 
-        return result
+        output_path = os.path.join(self.path, feature_set.name + '.json')
+        yield output_path, result

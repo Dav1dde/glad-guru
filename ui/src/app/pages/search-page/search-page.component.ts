@@ -2,7 +2,6 @@ import {Component} from '@angular/core';
 import {DataService} from "../../services/data.service";
 import {Observable} from "rxjs";
 import {flatMap, map} from "rxjs/operators";
-import {DomSanitizer} from "@angular/platform-browser";
 
 @Component({
     selector: 'app-search-page',
@@ -19,7 +18,11 @@ export class SearchPageComponent {
         return term$.pipe(
             flatMap(term => {
                 return this.dataService.getSymbols().pipe(
-                    map(symbols => symbols.filter(s => s.startsWith(term)).slice(0, 15))
+                    map(symbols => {
+                        return symbols
+                            .filter(s => s.toLowerCase().includes(term.toLowerCase()))
+                            .slice(0, 15);
+                    })
                 );
             })
         );
