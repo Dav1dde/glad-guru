@@ -8,6 +8,7 @@ import {map} from "rxjs/operators";
         'autocomplete': 'off',
         'autocapitalize': 'off',
         'autocorrect': 'off',
+        'spellcheck': 'false'
     }
 })
 export class AutoCompleteInputDirective {
@@ -16,5 +17,9 @@ export class AutoCompleteInputDirective {
     constructor(private _elementRef: ElementRef<HTMLInputElement>) {
         this.content$ = fromEvent<Event>(_elementRef.nativeElement, 'input')
             .pipe(map($event => ($event.target as HTMLInputElement).value));
+    }
+
+    public setValue(content: string) {
+        this._elementRef.nativeElement.value = content;
     }
 }

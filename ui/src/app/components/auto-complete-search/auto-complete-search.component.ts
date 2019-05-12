@@ -1,20 +1,17 @@
 import {
-    AfterContentInit,
     Component,
     ContentChild,
     ElementRef,
     EventEmitter,
-    Inject,
-    Input, OnDestroy,
+    Input,
+    OnDestroy,
     OnInit,
-    Output, TemplateRef,
+    Output,
+    TemplateRef,
     ViewChild
 } from '@angular/core';
-import {DOCUMENT, NgForOfContext} from "@angular/common";
-import {concat, fromEvent, Observable, of, Subject, Subscription} from "rxjs";
+import {concat, Observable, of, Subscription} from "rxjs";
 import {AutoCompleteInputDirective} from "./auto-complete-input.directive";
-import {map} from "rxjs/operators";
-import {DomSanitizer} from "@angular/platform-browser";
 
 @Component({
     selector: 'app-auto-complete-search',
@@ -41,6 +38,10 @@ export class AutoCompleteSearchComponent implements OnInit, OnDestroy {
     public itemSelected = new EventEmitter<string>();
     @Input()
     public search: (text: Observable<string>) => Observable<any[]>;
+    @Input()
+    public autoHide: boolean = true;
+    @Input()
+    public initialTerm: string = '';
     @ContentChild(TemplateRef)
     public template: TemplateRef<any>;
     @ContentChild(AutoCompleteInputDirective)
@@ -58,7 +59,9 @@ export class AutoCompleteSearchComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.results$ = concat(of(''), this.input.content$).pipe(this.search);
+        this.input.setValue(this.initialTerm);
+
+        this.results$ = concat(of(this.initialTerm), this.input.content$).pipe(this.search);
 
         this._resultSubscription = this.results$.subscribe(values => {
             this.hasValues = !!values && !!values.length;
@@ -70,7 +73,7 @@ export class AutoCompleteSearchComponent implements OnInit, OnDestroy {
     }
 
     get isActive() {
-        return this.hasValues && this.focused;
+        return !this.autoHide || (this.hasValues && this.focused);
     }
 
     onFocus(event) {

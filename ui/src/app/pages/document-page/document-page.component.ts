@@ -4,17 +4,23 @@ import {Observable, of} from "rxjs";
 import {catchError, flatMap, map, share, switchMap, tap} from "rxjs/operators";
 import {DataService} from "../../services/data.service";
 import {DomSanitizer, SafeHtml, Title} from "@angular/platform-browser";
+import {Location} from "@angular/common";
 
 @Component({
     selector: 'app-document-page',
     template: `
-        <a [routerLink]="['/']">Back</a>
+        <a href="javascript:void(0)" (click)="back()">Back</a>
         <div *ngIf="symbol$ | async as symbol">
             <ul>
                 <li>Name: {{ symbol.name }}</li>
                 <li *ngIf="symbol.api">API: {{ symbol.api }}</li>
                 <li>Type: {{ symbol.type }}</li>
-                <li *ngIf="symbol.alias">Alias: <a [routerLink]="['/' + symbol.alias]">{{ symbol.alias }}</a></li>
+                <li *ngIf="symbol.alias && symbol.alias.length">
+                    Alias:
+                    <ng-container *ngFor="let alias of symbol.alias; let isLast=last">
+                        <a [routerLink]="['/' + alias]">{{ alias }}</a>{{ isLast ? '' : ', ' }}
+                    </ng-container>
+                </li>
             </ul>
         </div>
         <div [innerHTML]="document$ | async"></div>
@@ -26,7 +32,9 @@ export class DocumentPageComponent implements OnInit {
 
     constructor(private dataService: DataService,
                 private titleService: Title,
-                private route: ActivatedRoute, private sanitizer: DomSanitizer) {
+                private route: ActivatedRoute,
+                private sanitizer: DomSanitizer,
+                private location: Location) {
     }
 
     ngOnInit() {
@@ -46,5 +54,9 @@ export class DocumentPageComponent implements OnInit {
         );
 
         this.route.paramMap.subscribe(params => this.titleService.setTitle(params.get('symbol') + ' - glad guru'));
+    }
+
+    back() {
+        this.location.back();
     }
 }

@@ -1,4 +1,4 @@
-<app-auto-complete-search [search]="search">
+<app-auto-complete-search [search]="search" [autoHide]="false" [initialTerm]="initialTerm$ | async">
     <input appAutoCompleteInput type="text">
 
     <ng-template let-values let-active="active">

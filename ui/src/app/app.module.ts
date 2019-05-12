@@ -9,6 +9,7 @@ import {HttpClientModule} from "@angular/common/http";
 import {FormsModule} from "@angular/forms";
 import { DocumentPageComponent } from './pages/document-page/document-page.component';
 import { AutoCompleteInputDirective } from './components/auto-complete-search/auto-complete-input.directive';
+import {LayoutsModule} from "@guru/layouts/layouts.module";
 
 @NgModule({
     declarations: [
@@ -22,7 +23,9 @@ import { AutoCompleteInputDirective } from './components/auto-complete-search/au
         BrowserModule,
         AppRoutingModule,
         HttpClientModule,
-        FormsModule
+        FormsModule,
+
+        LayoutsModule
     ],
     providers: [],
     bootstrap: [AppComponent]

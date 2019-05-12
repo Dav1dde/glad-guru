@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {Observable} from "rxjs";
+import {combineLatest, Observable} from "rxjs";
 import {map, share, shareReplay} from "rxjs/operators";
 import {flatMap} from "rxjs/internal/operators";
 
@@ -16,8 +16,10 @@ export class DataService {
 
     public getSymbols(): Observable<string[]> {
         if (!this.symbols) {
-            this.symbols = this.httpClient.get<string[]>('/assets/gl.json')
-                .pipe(shareReplay(1))
+            let gl$ = this.httpClient.get<string[]>('/assets/gl.json');
+            let vk$ = this.httpClient.get<string[]>('/assets/vk.json');
+            this.symbols = combineLatest(gl$, vk$)
+                .pipe(map(([gl, vk]) => [...gl, ...vk]), share())
         }
 
         return this.symbols;
@@ -26,7 +28,7 @@ export class DataService {
     public getIndex(): Observable<{[name: string]: string[]}> {
         if (!this.index) {
             this.index = this.httpClient.get<{ [name: string]: string[] }>(`/assets/docs/index.json`)
-                .pipe(shareReplay(1));
+                .pipe(share());
         }
 
         return this.index;

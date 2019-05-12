@@ -1,0 +1,33 @@
+:host {
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    flex: 0 0 50px;
+    line-height: 50px;
+    vertical-align: middle;
+
+    background-color: purple;
+    color: white;
+
+    padding: 0 0 0 30px;
+
+    a {
+        text-decoration: none;
+        color: white;
+
+        &:active, &:visited {
+            color: white;
+        }
+    }
+}
+
+main {
+    flex: 1 1 auto;
+
+    margin: 15px auto;
+
+    width: 80%;
+    max-width: 800px;
+}
